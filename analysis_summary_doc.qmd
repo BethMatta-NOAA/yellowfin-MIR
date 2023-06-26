@@ -1,0 +1,145 @@
+---
+title: "Yellowfin sole marginal increment analysis"
+author: "Beth Matta"
+format: pdf
+editor: visual
+execute: 
+  echo: false
+  warning: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup}
+library(knitr)
+source("./Code/02analyze_data.R") #main script
+opts_chunk$set(fig.pos = "H", out.extra = "") #prevent figures from floating
+
+```
+
+# Introduction
+
+A marginal increment analysis (MIA) was applied to otoliths of yellowfin sole (*Limanda aspera*) to quantify growth and better understand the seasonal pattern of material accreted at the otolith edge. Two outcomes are expected from this analysis: 1) it will be useful in aiding age readers to determine whether or not to count growth observed at the edge in the age estimate, and 2) it can be used to convert integer ages to continuous ages to allow improved prediction of age based on near infrared (NIR) spectrograms.
+
+# Methods
+
+## Sample selection
+
+Otolith samples were selected from the AFSC Age and Growth Program archive. Otoliths collected from the eastern Bering Sea in two nonconsecutive years with contrasting thermal regimes (2012 cool; 2016 warm) were measured to assess any potential effects of temperature on otolith growth deposition and phenology. Fish were assigned a probable life stage (juvenile vs adult) based on the age at maturity (10 years) reported by TenBrink and Wilderbuer (2015).
+
+We randomly selected a target sample size of 10 otoliths per month (Buckmeier et al. 2017) within each maturity category and collection year from the Age and Growth Program archive. Samples were from both the summer scientific trawl survey and the commercial fishery. The fishery operates year-round; survey samples were used to fill in data gaps. Some months were below the sample size target (particularly for juveniles, which are not as well sampled by the fishery) due to lower catches.
+
+```{r, fig.cap="Yellowfin sole otoliths selected for marginal increment analysis", out.width="6.5in"}
+
+include_graphics("./Images/sample_selection.png")
+
+```
+
+Otoliths were previously processed for age determination to support stock assessments, with all ages recorded in the Age and Growth Program database age3. Yellowfin sole are typically aged using the break-and-burn method to enhance growth zone contrast (Matta and Kimura 2012), therefore, we used this preparation method for the MIA.
+
+## Otolith imaging and measurements
+
+Otoliths were digitally photographed using a Leica DMC4500 camera attached to a Leica MZ95 dissecting microscope and saved as .tiff files using Image-Pro v. 10.0.11 software. To blind the measurement analyst from collection information contained in the image file name, images were batch-renamed after the structure ID by the database manager and recorded in the AFSC Age and Growth Program's age3 database. Otoliths were measured without any knowledge of fish age or collection date to avoid introducing measurement bias with prior expectations of edge growth.
+
+Using the Line Profile Tool in Image-Pro, Margin Width (MW) and Penultimate Band Width (PBW) measurements were taken along two axes of growth, the dorsal (short) and ventral (long) side of the otolith sulcus, resulting in 4 measurements per otolith.
+
+For each axis, the marginal increment ratio (MIR) was calculated following Conrath et al. (2002) as MIR = MW/PBW, where MW represents new growth forming at the margin (edge) of the otolith, and the PBW represents the last fully-formed annulus (Figure 1). Measurements were demarcated at the distal edge of the translucent (dark) zones. Thus, an otolith with no opaque growth at the edge would have an MIR of 0, and an otolith with a translucent zone starting to form on the edge would have an MIR approaching 1. Values of MIR may exceed 1 in years with exceptionally high growth compared to the previous year.
+
+```{r, fig.cap="Marginal increment measurements", out.width="6.5in"}
+
+include_graphics("./Images/measurements.png")
+
+```
+
+## Modeling marginal increment growth
+
+The dorsal axis MIR (DMIR) and ventral axis MIR (VMIR) were compared using a paired t-test. There was no statistical difference in the MIR between axes (t = `r round(myt$statistic, 2)`, df = `r myt[2]`, p = `r round(myt$p.value, 2)`); therefore, the DMIR is used henceforth.
+
+The MIR was log-transformed and modeled as a function of day of year (DOY) using generalized additive models. Life stage (adult vs juvenile) and fish age were also included as possible predictors. The models evaluated were:
+
+m1a: $log(MIR) ~ s(DOY)$
+
+m1b: $log(MIR) ~ s(DOY) + Stage$
+
+m1c: $log(MIR) ~ s(DOY) + age$
+
+m1d: $log(MIR) ~ s(DOY, by=Stage) + Stage$
+
+where model m1d includes a smooth-factor interaction between life stage and DOY. To allow for temporal autocorrelation of observations, a first-order continuous correlation structure was specified by collection date. Day of year was fitted using a cyclic regression spline to account for the expected periodic seasonal nature of otolith growth. The Bayesian Information Criterion (BIC) was used to select the most parsimonious model.
+
+```{r boxplot, fig.width=6.5, fig.cap="Monthly dorsal axis marginal increment ratios by life stage"}
+
+DMIR.stage.boxplot
+
+```
+
+# Results
+
+Thus far, all of the 2016 otoliths selected for this analysis have been measured. Measurements of 2012 otoliths are pending the results of using the 2016 to hopefully improve the NIRS age prediction models.
+
+The most parsimonious model describing MIR growth was `r best.model`, where the MIR was allowed to vary as a function of day of year within each life stage. All terms in the model were significant (p \< 0.05), including the DOY smooth terms for adults and juveniles, which the estimated degrees of freedom indicated were better fit by a smoother than a straight line. The fitted MIR values followed a sinusoidal pattern with one minimum and one maximum, though the exact timing of these varied by life stage. The MIR minima and maxima differed between juveniles and adults. For juveniles, the days corresponding to the most and least amount of growth on the otolith edge were `r format(juv.max.date, "%b %d")` and `r format(juv.min.date, "%B %d")`, respectively, likely indicating that annulus formation occurs sometime between those dates. For adults, the timing of growth occurred later in the year, with maxima and minima of `r format(ad.max.date, "%b %d")` and `r format(ad.min.date, "%B %d")`, respectively.
+
+```{r GAM-predicted-values, fig.width=6.5, fig.cap="Predicted otolith marginal increment ratio values by day of year for each life stage"}
+
+fitted.gam
+
+```
+
+```{r BIC.table}
+kable(myBIC, 
+      caption = "Bayesian Information Criterion values of candidate models, in ascending order of BIC",
+      digits = 2)
+
+```
+
+```{r summ.tables}
+kable(signif(mysum$p.table, 2),
+      col.names = c("Estimate", "SE", "t", "p value"),
+      caption = "Parametric coefficients of most parsimonious model",
+      digits = 3)
+
+
+kable(signif(mysum$s.table, 2),
+      caption = "Smooth terms of most parsimonious model",
+      digits = 3)
+```
+
+```{r min.max.MIR}
+
+min.max.table <- matrix(c(juv.max,
+                          format(juv.max.date, "%b %d"),
+                          juv.min,
+                          format(juv.min.date, "%b %d"),
+                          ad.max,
+                          format(ad.max.date, "%b %d"),
+                          ad.min,
+                          format(ad.min.date, "%b %d")), ncol=4, byrow = TRUE)
+colnames(min.max.table) <- c("max DOY", "max date", "min DOY", "min date")
+rownames(min.max.table) <- c("juvenile", "adult")
+
+kable(min.max.table,
+      caption = "Numerical day of year and date associated with MIR minima and maxima for juvenile and adult yellowfin sole")
+
+```
+
+# Discussion
+
+This document summarizes results from the 2016 MIR measurements. The 2012 otoliths may be measured at a later date to evaluate whether timing of otolith growth may be different in a colder year.
+
+Following analysis, I learned that the life stage definitions may not be accurate for males; maturity in male yellowfin sole occurs around 22 cm, or about 7 years old. I reran the analysis using the estimated length at 50% maturity for males (22 cm, Nichol et al. 2019) and females (30 cm, TenBrink and Wilderbuer 2015) to re-define the life stages, but it resulted in far fewer observations for juveniles and an unbalanced design. It may be more desirable to simplify the model in the future to exclude predictors other than day of year.
+
+# Data Availability
+
+Non-confidential data, outputs, and predicted MIR values from fitted GAMs are available at [this GitHub repository](https://github.com/BethMatta-NOAA/yellowfin-MIR).
+
+# References
+
+Buckmeier DL, Sakaris PC, Schill DJ (2017) Validation of annual and daily increments in calcified structures and verification of age estimates. In: Quist MC, Isermann DA (eds) Age and growth of fishes: principles and techniques. American Fisheries Society, Bethesda, Maryland, pp 33-79
+
+Conrath CL, Gelsleichter J, Musick JA (2002) Age and growth of the smooth dogfish (*Mustelus canis*) in the northwest Atlantic Ocean. Fish Bull 100:674-682
+
+Matta M, Kimura D (2012) Age Determination Manual of the Alaska Fisheries Science Center Age and Growth Program vol 13.
+
+Nichol DG, Kotwicki S, Wilderbuer TK, Lauth RR, Ianelli JN. 2019. Availability of yellowfin sole *Limanda aspera* to the eastern Bering Sea trawl survey and its effect on estimates of survey biomass. Fish. Res. 211:319-330.
+
+TenBrink TT, Wilderbuer TK (2015) Updated maturity Estimates for flatfishes (Pleuronectidae) in the eastern Bering Sea, with implications for fisheries management. Mar Coast Fish 7:474-482. https://doi.org/10.1080/19425120.2015.1091411
