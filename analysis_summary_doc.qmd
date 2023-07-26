@@ -57,13 +57,13 @@ The dorsal axis MIR (DMIR) and ventral axis MIR (VMIR) were compared using a pai
 
 The MIR was log-transformed and modeled as a function of day of year (DOY) using generalized additive models. Life stage (adult vs juvenile) and fish age were also included as possible predictors. The models evaluated were:
 
-m1a: $log(MIR) ~ s(DOY)$
+m1a: $log(MIR) \sim s(DOY)$
 
-m1b: $log(MIR) ~ s(DOY) + Stage$
+m1b: $log(MIR) \sim s(DOY) + Stage$
 
-m1c: $log(MIR) ~ s(DOY) + age$
+m1c: $log(MIR) \sim s(DOY) + age$
 
-m1d: $log(MIR) ~ s(DOY, by=Stage) + Stage$
+m1d: $log(MIR) \sim s(DOY, by=Stage) + Stage$
 
 where model m1d includes a smooth-factor interaction between life stage and DOY. To allow for temporal autocorrelation of observations, a first-order continuous correlation structure was specified by collection date. Day of year was fitted using a cyclic regression spline to account for the expected periodic seasonal nature of otolith growth. The Bayesian Information Criterion (BIC) was used to select the most parsimonious model.
 
