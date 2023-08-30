@@ -11,5 +11,8 @@ Data folder - contains marginal increment measurement and non-confidential speci
 
 Code folder - contains data preparation, analysis, and output-writing scripts
 
-Output folder - contains plots of observed monthly marginal increment ratios and spreadsheet of fitted values 
+Output folder - contains plots of observed monthly marginal increment ratios and spreadsheet of fitted values
+
+
+## Please do not use these data without permission!
 
